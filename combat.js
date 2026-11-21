@@ -2,6 +2,7 @@
 (function (root) {
   "use strict";
   const limit = (value, low, high) => Math.min(high, Math.max(low, value));
+  const emptyInput={};
   const moves = {
     punch: { startup: .10, active: .10, recovery: .14, reach: 157, damage: 8, push: 12, stun: .18 },
     kick: { startup: .19, active: .12, recovery: .24, reach: 196, damage: 13, push: 23, stun: .28 },
@@ -11,20 +12,20 @@
   function fighter(id, side) {
     return { id, x: side ? 840 : 440, y: 0, vy: 0, face: side ? -1 : 1, hp: 100, meter: 42, wins: 0,
       guard: false, crouch: false, moving: 0, stun: 0, attack: null, combo: 0, chain: 0, buffer: null,
-      walkPhase: 0, jumps: 0, recentBlock: 0, hintCooldown: 0 };
+      walkPhase: 0, jumps: 0, recentBlock: 0, hintCooldown: 0, guardGrace: 0 };
   }
   class Duel {
     constructor(player = 'cory', mode = 'arcade', random = Math.random) {
       this.mode = mode; this.random = random; this.players = [fighter(player,0),fighter(player==='cory'?'bob':'cory',1)];
       this.round=1; this.time=60; this.state='intro'; this.elapsed=0; this.total=0; this.winner=-1;
       this.events=[]; this.stop=0; this.aiTime=.3; this.ai={}; this.cued=false; this.viaFinale=false;
-      this.sudden=false; this.endKind=''; this.stats={hits:0,blocks:0,maxCombo:0,damage:0};this.practiceTimer=0;
+      this.sudden=false; this.endKind=''; this.blow=0; this.stats={hits:0,blocks:0,maxCombo:0,damage:0};this.practiceTimer=0;
     }
     emit(type,data={}) { this.events.push({type,...data}); }
     setState(state) { this.state=state; this.elapsed=0; this.emit('state',{state}); }
     startRound() {
       this.players=this.players.map((p,i)=>Object.assign(fighter(p.id,i),{wins:p.wins}));
-      this.time=60; this.cued=false; this.sudden=false; this.stop=0; this.ai={}; this.aiTime=.45;
+      this.time=60; this.cued=false; this.sudden=false; this.stop=0; this.blow=0; this.ai={}; this.aiTime=.45;
       this.practiceTimer=0; this.winner=-1; this.endKind=''; this.setState('intro');
     }
     finish() {
@@ -43,9 +44,9 @@
     }
     chooseAI(dt) {
       const me=this.players[1], you=this.players[0], delta=you.x-me.x, d=Math.abs(delta);
-      if(this.mode==='training')return {};
+      if(this.mode==='training')return emptyInput;
       this.aiTime-=dt;
-      if(this.aiTime>0) return {...this.ai};
+      if(this.aiTime>0) return this.ai;
       this.aiTime=.16+this.random()*.28; const roll=this.random();
       this.ai={}; let tap=null;
       const approach=delta<0?'left':'right', retreat=delta<0?'right':'left';
@@ -63,11 +64,14 @@
       if(p.y>0||p.vy>0){p.vy-=1560*dt;p.y=Math.max(0,p.y+p.vy*dt);if(!p.y)p.vy=0;}
       if(p.attack){p.attack.t+=dt;const m=p.attack.move;if(p.attack.t>=m.startup+m.active+m.recovery)p.attack=null;}
       p.moving=0;p.guard=false;p.crouch=false;
+      p.guardGrace=Math.max(0,p.guardGrace-dt);
       const key=['special','kick','punch'].find(k=>input[k]);
-      if(key)p.buffer={key,life:.16};
+      if(key)p.buffer={key,life:.2};
       if(p.buffer){p.buffer.life-=dt;if(p.buffer.life<=0)p.buffer=null;}
       if(p.attack||p.stun>0)return;
-      p.guard=!!input.guard&&!p.y;p.crouch=!!input.crouch&&!p.y;
+      p.crouch=!!input.crouch&&!p.y;
+      if(input.guard&&!p.y){p.guard=true;p.guardGrace=.08;}
+      else if(p.guardGrace>0&&!p.y)p.guard=true;
       if(p.guard)return;
       if(input.jump && !p.y && p.vy===0){p.vy=632;p.jumps++;p.crouch=false;this.emit('jump',{index});}
       if(p.buffer) {
@@ -106,18 +110,21 @@
       if(attack.type!=='special')a.meter=limit(a.meter+(attack.type==='kick'?13:9),0,100);
       a.combo=a.chain?a.combo+1:1;a.chain=.98;
       if(ai===0){this.stats.hits++;this.stats.maxCombo=Math.max(this.stats.maxCombo,a.combo);this.stats.damage+=m.damage;}
-      this.stop=attack.type==='punch'?.047:.074;
-      this.emit('hit',{index:bi,attacker:ai,move:attack.type,combo:a.combo});
+      const scaled=.018+m.damage*.0026+Math.min(a.combo,5)*.007;
+      this.stop=Math.min(.13,scaled);
+      if(b.hp<=0){this.stop=Math.max(this.stop,.1);this.blow=.4;}
+      this.emit('hit',{index:bi,attacker:ai,move:attack.type,combo:a.combo,damage:m.damage,ko:b.hp<=0});
     }
     step(dt,input={}) {
       this.total+=dt; this.elapsed+=dt;
       if(this.state==='intro'){
-        if(this.elapsed>1.08&&!this.cued){this.cued=true;this.emit('fight');}
-        if(this.elapsed>=1.82)this.setState('live');
+        if(this.elapsed>1.50&&!this.cued){this.cued=true;this.emit('fight');}
+        if(this.elapsed>=2.90)this.setState('live');
         return;
       }
       if(this.state==='roundEnd'){
-        if(this.elapsed>=1.75){if(this.players[this.winner].wins>=2)this.setState('finish');else {this.round++;this.startRound();}}
+        const hold=this.endKind==='ko'?3.6:1.75;
+        if(this.elapsed>=hold){if(this.players[this.winner].wins>=2)this.setState('finish');else {this.round++;this.startRound();}}
         return;
       }
       if(this.state==='finish'){
@@ -127,7 +134,7 @@
       }
       if(this.state==='finale'){if(this.elapsed>=5.6){if(this.mode==='training')this.startRound();else this.setState('results');}return;}
       if(this.state!=='live')return;
-      if(this.stop>0){this.stop-=dt;if(input.kick||input.punch||input.special){const p=this.players[0];p.buffer={key:input.special?'special':input.kick?'kick':'punch',life:.16};}return;}
+      if(this.stop>0){this.stop-=dt;if(input.kick||input.punch||input.special){const p=this.players[0];p.buffer={key:input.special?'special':input.kick?'kick':'punch',life:.2};}return;}
       if(this.mode==='arcade' && !this.sudden)this.time=Math.max(0,this.time-dt);
       const [a,b]=this.players;
       if(!a.attack)a.face=b.x>=a.x?1:-1;
@@ -150,6 +157,7 @@
         this.sudden=true;a.hp=b.hp=1;this.stop=.32;this.emit('sudden');return;
       }
       if(!a.hp||!b.hp){
+        if(this.stop>0)return;
         const w=a.hp>b.hp?0:1;
         this.award(w, this.players[w].hp>=100?'perfect':'ko');
       }else if(!this.time&&!this.sudden){
@@ -157,6 +165,7 @@
       }
     }
   }
+  Duel.moves=moves;
   root.VelvetDuel=Duel;
   if(typeof module!=='undefined'&&module.exports)module.exports=Duel;
 })(typeof window==='undefined'?globalThis:window);

@@ -3,12 +3,13 @@
 ## Voices
 - Bob: Benedict – Premium British (RP) Male, `6q6UVsvekS0UjrUXFz79`, model `eleven_v3`
 - Cory: William – Flamboyant and Sassy, `4HvexEZMAmq2M66Ae0nD`, model `eleven_v3`
-- Announcer: Jason (announcer) Instant Voice Clone, `kOmN1X3x5295JqsHsD4q`, model `eleven_v4` with `[shouting]` tags. Three takes per line; punchiest take shipped. Flow `2aTP4DTO0FxSI94W0r2m`.
+- Announcer: Jason Instant Voice Clone (app re-clone), `Of6MrggueGNHio3zxb9C`, model `eleven_v4` with `[shouting]` tags. Several takes per line; clearest Whisper / tightest take shipped. Flow `2aTP4DTO0FxSI94W0r2m`. This replaces the earlier `kOmN1X3x5295JqsHsD4q` announcer pack.
 
 ## Music (`eleven_music_v2_5`, one take each, 48 kHz 24-bit stereo WAV)
 - `menu.wav` — 140 s midnight opera-house instrumental (2,100 credits)
 - `opera.wav` — 145 s dark combat theme with a BDB choir chant (2,175 credits)
 - `glasshouse.wav` — 144 s botanical combat instrumental (2,160 credits)
+- Web playback uses 192 kbps, 48 kHz stereo MP3 siblings (`menu.mp3`, `opera.mp3`, `glasshouse.mp3`) made with ffmpeg and libmp3lame. `app.js` selects MP3 except when the page is opened from a `file:` URL, which keeps the WAV masters for the offline download.
 
 ## Character lines (three takes each; tightest take shipped)
 - `intro-bob.mp3` — "The name is Bob. Big Dick Bob. I brought the eggplant."
@@ -23,7 +24,8 @@
 - `round1.mp3` — "Round one!"
 - `round2.mp3` — "Round two!"
 - `round3.mp3` — "Final round!"
-- `fight.mp3` — "Fight!"
+- `fight.mp3` — "Cory and Big Dick Bob, fight! May the best eggplant win!" (default)
+- `fight-cory-and-bob.mp3` — shorter alternate, "Cory and Bob, fight!" (in the repo and sampler; not wired)
 - `finish.mp3` — "Finish it with eggplant!"
 - `finale-bob.mp3` — "Protocol Violet!"
 - `finale-cory.mp3` — "Aubergine Ovation!"
@@ -31,7 +33,9 @@
 - `cory-wins.mp3` — "Cory wins!"
 - `time.mp3` — "Time!" (time-out with both fighters still standing)
 - `perfect.mp3` — "Perfect!" (knockout with the winner at full health)
-- `ko.mp3` — "K.O.!" (other knockouts; does not replace the `knockout.mp3` impact SFX)
+- `ko-bob.mp3` — "Buck 75 down!" (Bob wins by knockout)
+- `ko-cory.mp3` — "Tell the Colombian to bring a body bag!" (Cory wins by knockout)
+- `ko.mp3` — "Knockout!" unused fallback only; does not replace the `knockout.mp3` impact SFX. The old "K.O.!" wording was dropped because the clone did not say it clearly.
 
 ## SFX (`eleven_text_to_sound_v3`, two takes, louder take shipped)
 `punch`, `kick`, `block`, `jump`, `whoosh`, `menu-select`, `knockout`, `special-charge`, `special-bob`, `special-cory`, `finale-hit-bob`, `finale-hit-cory`
@@ -41,7 +45,8 @@
 - Punch/kick startup plays `whoosh`; hits keep distinct light/heavy impacts.
 - Specials play `special-charge` plus the fighter's special SFX and banter line.
 - Match results play the Jason announcer "* wins" clip, then the winner's character line.
-- Round end plays `ko`, `time`, or `perfect` according to how the round ended; knockout and perfect also keep the `knockout` impact SFX.
+- Round end plays `time` or `perfect` as before. A regular knockout plays `ko-bob` or `ko-cory` by winner; knockout and perfect also keep the `knockout` impact SFX.
+- The fight call still starts at 1.50 s. Combat goes live at about 2.92 s, just after the shouted "fight", and the rest of the line plays over the round.
 - The finish caption and call now say "Finish it with eggplant!".
 - Sound toggle, focus-loss pause, and offline local assets are unchanged.
 
@@ -50,5 +55,5 @@ Live subscription balance could not be read (ElevenLabs `account_get_usage` stil
 - Music: 6,435 credits
 - SFX: about 104 credits (24 clips)
 - Character TTS: 1,266 credits (18 clips)
-- Announcer TTS: 795 credits (36 clips, 12 lines × 3 takes)
-- Total so far: about 8,600 credits
+- Announcer TTS (this Jason app-clone pass): 1,769 credits (original 12 lines × 3 takes = 795; fight/KO wording retries and sampler labels = 705; winner-specific KO lines and labels = 269)
+- Total so far: about 10,369 credits
