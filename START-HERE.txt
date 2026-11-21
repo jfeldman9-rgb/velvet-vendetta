@@ -48,5 +48,5 @@ CREDITS
 
 Original character and arena illustrations were generated for this game from
 the supplied likeness reference. Music and sound effects were synthesized for
-Velvet Vendetta. Bob is voiced by ElevenLabs Benedict. Cory is voiced by William (flamboyant and sassy). Announcer cues from the original pack remain until Jason's Instant Voice Clone can be added.
+Velvet Vendetta. Bob is voiced by ElevenLabs Benedict. Cory is voiced by William (flamboyant and sassy). Arcade announcer cues are Jason's Instant Voice Clone.
 Open Sans font licensing information is in assets/fonts.

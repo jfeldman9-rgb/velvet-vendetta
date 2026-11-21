@@ -134,8 +134,13 @@
     if(e.type!=='state')return;
     switch(e.state){
       case 'intro':delayed=[100,100];renderer.reset();audio.say('round'+duel.round);caption('Round '+duel.round+'.',1.1);break;
-      case 'roundEnd':audio.sfx('knockout',.75);break; // Time-up and perfect announcer cues wait on the Jason voice clone.
-      case 'finish':audio.say('finish');caption('Finish it!',1.15);break;
+      case 'roundEnd':{
+        const kind=duel.endKind||(duel.players.some(p=>p.hp===0)?'ko':'time');
+        if(kind==='time') audio.say('time');
+        else {audio.sfx('knockout',.75);audio.say(kind==='perfect'?'perfect':'ko');}
+        break;
+      }
+      case 'finish':audio.say('finish');caption('Finish it with eggplant!',1.25);break;
       case 'finale':{const id=duel.players[duel.winner].id;audio.say('finale-'+id);caption(fighters[id].finale+'!',1.4);finaleHit=false;break;}
       case 'results':results();break;
     }
@@ -159,8 +164,8 @@
     setText($('round-tag'),mode==='training'?'Practice':'Round '+d.round);
     $('finish-now').hidden=!(d.state==='finish'&&d.winner===0);
     if(d.state==='intro')label(mode==='training'?'Training':venues[arena],d.cued?'Fight!':mode==='training'?'Practice':'Round '+d.round);
-    else if(d.state==='roundEnd')label(title(d.players[d.winner].id)+' takes the round',d.players.some(p=>p.hp===0)?'Knockout':'Time up');
-    else if(d.state==='finish')label(d.winner===0?'Victory · '+Math.ceil(6.5-d.elapsed)+' seconds':'Opponent finisher','Finish it!');
+    else if(d.state==='roundEnd')label(title(d.players[d.winner].id)+' takes the round',d.endKind==='perfect'?'Perfect':d.endKind==='time'?'Time up':'Knockout');
+    else if(d.state==='finish')label(d.winner===0?'Victory · '+Math.ceil(6.5-d.elapsed)+' seconds':'Opponent finisher','Finish it with eggplant!');
     else if(d.state==='finale')label(d.elapsed>1.92?'Eggplant fatality':'',d.elapsed>1.92?fighters[d.players[d.winner].id].finale:'','72%');
     else if(specialTime>0)label('Tie break',specialMessage);
     else label('','');
