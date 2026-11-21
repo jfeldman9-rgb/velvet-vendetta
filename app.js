@@ -3,8 +3,8 @@
   const $=id=>document.getElementById(id), all=q=>Array.from(document.querySelectorAll(q));
   const icon=id=>'<svg aria-hidden="true"><use href="#i-'+id+'"/></svg>';
   const title=id=>id==='cory'?'Cory':'Bob';
-  const fighters={cory:{style:'Orchid Rush',desc:'Fast jabs build meter for a long-range burst of orchid petals.',line:'Darling, the curtain is mine.',finale:'Aubergine Ovation'},
-    bob:{style:'Null Protocol',desc:'Control the gap with a heavy kick, then close it with a quick digital pulse.',line:'Your clearance has expired.',finale:'Protocol Violet'}};
+  const fighters={cory:{style:'Orchid Rush',desc:'Fast jabs build meter for a long-range burst of orchid petals.',line:'Easy, handsome. That little black suit is doing things for me.',finale:'Aubergine Ovation'},
+    bob:{style:'Null Protocol',desc:'Control the gap with a heavy kick, then close it with a quick digital pulse.',line:'The name is Bob. Big Dick Bob. I brought the eggplant.',finale:'Protocol Violet'}};
   const venues={opera:'The Opera House',glasshouse:'The Glasshouse'};
   const renderer=new ArenaRenderer($('canvas')), dialog=$('dialog');
   const musicExtension='wav'; // The full-resolution offline edition selects PCM WAV here.
@@ -13,24 +13,27 @@
     constructor(){
       this.enabled=true;try{this.enabled=localStorage.getItem('velvet-audio')!=='off';}catch(_){}
       this.unlocked=false;this.track='menu';this.music=new Audio();this.music.loop=true;this.music.volume=.26;
-      this.voice=new Audio();this.voice.volume=.94;this.fxPool=Array.from({length:7},()=>new Audio());this.index=0;this.quiet=false;
+      this.voice=new Audio();this.voice.volume=.94;this.banter=new Audio();this.banter.volume=.9;
+      this.fxPool=Array.from({length:8},()=>new Audio());this.index=0;this.quiet=false;this.lineTimer=0;
     }
     play(a){const p=a.play();if(p)p.catch(()=>{});}
     unlock(){
       if(this.unlocked||!this.enabled)return;
       this.unlocked=true;
-      for(const a of [this.voice,...this.fxPool]){a.src=silent;this.play(a);}
+      for(const a of [this.voice,this.banter,...this.fxPool]){a.src=silent;this.play(a);}
       this.music.src='assets/audio/'+this.track+'.'+musicExtension;this.play(this.music);
     }
     change(to){if(to===this.track)return;this.track=to;if(this.unlocked){this.music.src='assets/audio/'+to+'.'+musicExtension;if(this.enabled&&!document.hidden)this.play(this.music);}}
     sfx(id,gain=.66){if(!this.enabled||!this.unlocked)return;const a=this.fxPool[this.index++%this.fxPool.length];a.volume=gain;a.src='assets/audio/'+id+'.mp3';this.play(a);}
     say(id){if(!this.enabled||!this.unlocked)return;this.voice.src='assets/audio/'+id+'.mp3';this.play(this.voice);}
+    banter(id){if(!this.enabled||!this.unlocked)return;this.banter.src='assets/audio/'+id+'.mp3';this.play(this.banter);}
+    sayLater(id,ms){clearTimeout(this.lineTimer);this.lineTimer=setTimeout(()=>this.banter(id),ms);}
     toggle(){this.enabled=!this.enabled;try{localStorage.setItem('velvet-audio',this.enabled?'on':'off');}catch(_){}
       if(this.enabled){if(!this.unlocked)this.unlock();else this.play(this.music);}
-      else {for(const a of [this.music,this.voice,...this.fxPool])a.pause();}
+      else {for(const a of [this.music,this.voice,this.banter,...this.fxPool])a.pause();clearTimeout(this.lineTimer);}
       updateSound();
     }
-    pauseDucking(on){this.quiet=on;this.music.volume=on?.1:.26;if(on)this.voice.pause();}
+    pauseDucking(on){this.quiet=on;this.music.volume=on?.1:.26;if(on){this.voice.pause();this.banter.pause();}}
   }
   const audio=new Sound();
   function updateSound(){$('sound').innerHTML=icon(audio.enabled?'sound':'muted')+'<span>Sound '+(audio.enabled?'on':'off')+'</span>';$('sound').setAttribute('aria-pressed',String(audio.enabled));}
@@ -111,23 +114,33 @@
     const resultLine=(duel.viaFinale?fighters[winner].finale+' · ':'')+duel.players[0].wins+' – '+duel.players[1].wins;
     showDialog('results',won?'Arcade victory':'Match complete','<h2><span class="result-name">'+title(winner)+'</span> wins</h2>'+
       (duel.viaFinale?'<img class="result-img" src="assets/'+winner+'-finale.webp" alt="">':'')+'<p><strong>'+resultLine+'</strong><br>'+duel.stats.hits+' hits landed · Best combo '+duel.stats.maxCombo+'</p><div class="stack">'+menuButton('rematch','Rematch',true)+menuButton('new-fighter','Choose fighter')+menuButton('done','Title screen')+'</div>');
-    audio.say(winner+'-wins');$('rematch').onclick=begin;$('new-fighter').onclick=()=>select(mode);$('done').onclick=()=>home();
+    audio.say(winner+'-wins');audio.sayLater('line-'+winner+'-win',1700);$('rematch').onclick=begin;$('new-fighter').onclick=()=>select(mode);$('done').onclick=()=>home();
   }
   function onEvent(e){
     renderer.react(e,duel);
     if(e.type==='fight'){audio.say('fight');caption('Fight!',.75);}
     if(e.type==='jump')audio.sfx('jump',.45);
+    if(e.type==='swing')audio.sfx('whoosh',.42);
     if(e.type==='block')audio.sfx('block');
     if(e.type==='hit')audio.sfx(e.move==='punch'?'punch':'kick',e.move==='punch'?.59:.72);
-    if(e.type==='special')audio.sfx('special-'+duel.players[e.index].id,.78);
+    if(e.type==='special'){
+      audio.sfx('special-charge',.52);
+      audio.sfx('special-'+duel.players[e.index].id,.78);
+      audio.banter('line-'+duel.players[e.index].id+'-special');
+    }
     if(e.type==='lowMeter')caption('Signature needs 40 meter.',1.1);
     if(e.type==='dummyReset')caption('Training partner restored.',.9);
     if(e.type==='sudden'){specialMessage='Sudden death';specialTime=1.4;caption('Next clean hit wins.',1.4);}
     if(e.type!=='state')return;
     switch(e.state){
       case 'intro':delayed=[100,100];renderer.reset();audio.say('round'+duel.round);caption('Round '+duel.round+'.',1.1);break;
-      case 'roundEnd':audio.sfx('knockout',.75);break;
-      case 'finish':audio.say('finish');caption('Finish it!',1.15);break;
+      case 'roundEnd':{
+        const kind=duel.endKind||(duel.players.some(p=>p.hp===0)?'ko':'time');
+        if(kind==='time') audio.say('time');
+        else {audio.sfx('knockout',.75);audio.say(kind==='perfect'?'perfect':'ko');}
+        break;
+      }
+      case 'finish':audio.say('finish');caption('Finish it with eggplant!',1.25);break;
       case 'finale':{const id=duel.players[duel.winner].id;audio.say('finale-'+id);caption(fighters[id].finale+'!',1.4);finaleHit=false;break;}
       case 'results':results();break;
     }
@@ -151,8 +164,8 @@
     setText($('round-tag'),mode==='training'?'Practice':'Round '+d.round);
     $('finish-now').hidden=!(d.state==='finish'&&d.winner===0);
     if(d.state==='intro')label(mode==='training'?'Training':venues[arena],d.cued?'Fight!':mode==='training'?'Practice':'Round '+d.round);
-    else if(d.state==='roundEnd')label(title(d.players[d.winner].id)+' takes the round',d.players.some(p=>p.hp===0)?'Knockout':'Time up');
-    else if(d.state==='finish')label(d.winner===0?'Victory · '+Math.ceil(6.5-d.elapsed)+' seconds':'Opponent finisher','Finish it!');
+    else if(d.state==='roundEnd')label(title(d.players[d.winner].id)+' takes the round',d.endKind==='perfect'?'Perfect':d.endKind==='time'?'Time up':'Knockout');
+    else if(d.state==='finish')label(d.winner===0?'Victory · '+Math.ceil(6.5-d.elapsed)+' seconds':'Opponent finisher','Finish it with eggplant!');
     else if(d.state==='finale')label(d.elapsed>1.92?'Eggplant fatality':'',d.elapsed>1.92?fighters[d.players[d.winner].id].finale:'','72%');
     else if(specialTime>0)label('Tie break',specialMessage);
     else label('','');
@@ -199,7 +212,7 @@
     b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release);
   }
   window.addEventListener('blur',()=>{clearInputs();if(current==='battle'&&!paused&&!dialog.open&&duel?.state!=='results')pauseMenu();});
-  document.addEventListener('visibilitychange',()=>{clearInputs();if(document.hidden){for(const a of [audio.music,audio.voice,...audio.fxPool])a.pause();if(current==='battle'&&!dialog.open)pauseMenu();}else if(audio.enabled&&audio.unlocked)audio.play(audio.music);});
+  document.addEventListener('visibilitychange',()=>{clearInputs();if(document.hidden){for(const a of [audio.music,audio.voice,audio.banter,...audio.fxPool])a.pause();if(current==='battle'&&!dialog.open)pauseMenu();}else if(audio.enabled&&audio.unlocked)audio.play(audio.music);});
   window.addEventListener('resize',()=>{if(current==='battle'&&duel)renderer.draw(duel,arena);});
   stage(arena);requestAnimationFrame(frame);
 })();

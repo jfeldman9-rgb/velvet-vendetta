@@ -18,14 +18,14 @@
       this.mode = mode; this.random = random; this.players = [fighter(player,0),fighter(player==='cory'?'bob':'cory',1)];
       this.round=1; this.time=60; this.state='intro'; this.elapsed=0; this.total=0; this.winner=-1;
       this.events=[]; this.stop=0; this.aiTime=.3; this.ai={}; this.cued=false; this.viaFinale=false;
-      this.sudden=false; this.stats={hits:0,blocks:0,maxCombo:0,damage:0};this.practiceTimer=0;
+      this.sudden=false; this.endKind=''; this.stats={hits:0,blocks:0,maxCombo:0,damage:0};this.practiceTimer=0;
     }
     emit(type,data={}) { this.events.push({type,...data}); }
     setState(state) { this.state=state; this.elapsed=0; this.emit('state',{state}); }
     startRound() {
       this.players=this.players.map((p,i)=>Object.assign(fighter(p.id,i),{wins:p.wins}));
       this.time=60; this.cued=false; this.sudden=false; this.stop=0; this.ai={}; this.aiTime=.45;
-      this.practiceTimer=0; this.winner=-1; this.setState('intro');
+      this.practiceTimer=0; this.winner=-1; this.endKind=''; this.setState('intro');
     }
     finish() {
       if(this.state!=='finish') return;
@@ -35,8 +35,9 @@
       if(this.mode!=='training'||!['intro','live'].includes(this.state))return;
       this.winner=0;this.viaFinale=true;this.setState('finale');
     }
-    award(i) {
+    award(i, kind) {
       this.winner=i; this.players[i].wins++;
+      this.endKind=kind||'ko';
       for(const p of this.players){p.attack=null;p.buffer=null;p.guard=false;p.moving=0;}
       this.stop=0; this.setState('roundEnd');
     }
@@ -76,6 +77,7 @@
         } else {
           const m=moves[fire==='special'?p.id:fire];
           if(fire==='special'){p.meter-=40;this.emit('special',{index});}
+          else this.emit('swing',{index,move:fire});
           p.attack={type:fire,move:m,t:0,landed:false,face:p.face};p.crouch=false;return;
         }
       }
@@ -147,7 +149,12 @@
       if((!a.hp&&!b.hp)||(!this.time&&a.hp===b.hp&&!this.sudden)){
         this.sudden=true;a.hp=b.hp=1;this.stop=.32;this.emit('sudden');return;
       }
-      if(!a.hp||!b.hp||(!this.time&&!this.sudden)){this.award(a.hp>b.hp?0:1);}
+      if(!a.hp||!b.hp){
+        const w=a.hp>b.hp?0:1;
+        this.award(w, this.players[w].hp>=100?'perfect':'ko');
+      }else if(!this.time&&!this.sudden){
+        this.award(a.hp>b.hp?0:1,'time');
+      }
     }
   }
   root.VelvetDuel=Duel;
