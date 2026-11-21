@@ -112,12 +112,13 @@
     step(dt,input={}) {
       this.total+=dt; this.elapsed+=dt;
       if(this.state==='intro'){
-        if(this.elapsed>1.08&&!this.cued){this.cued=true;this.emit('fight');}
-        if(this.elapsed>=1.82)this.setState('live');
+        if(this.elapsed>1.50&&!this.cued){this.cued=true;this.emit('fight');}
+        if(this.elapsed>=6.20)this.setState('live');
         return;
       }
       if(this.state==='roundEnd'){
-        if(this.elapsed>=1.75){if(this.players[this.winner].wins>=2)this.setState('finish');else {this.round++;this.startRound();}}
+        const hold=this.endKind==='ko'?3.6:1.75;
+        if(this.elapsed>=hold){if(this.players[this.winner].wins>=2)this.setState('finish');else {this.round++;this.startRound();}}
         return;
       }
       if(this.state==='finish'){
