@@ -2,6 +2,7 @@
 (function (root) {
   "use strict";
   const limit = (value, low, high) => Math.min(high, Math.max(low, value));
+  const emptyInput={};
   const moves = {
     punch: { startup: .10, active: .10, recovery: .14, reach: 157, damage: 8, push: 12, stun: .18 },
     kick: { startup: .19, active: .12, recovery: .24, reach: 196, damage: 13, push: 23, stun: .28 },
@@ -43,9 +44,9 @@
     }
     chooseAI(dt) {
       const me=this.players[1], you=this.players[0], delta=you.x-me.x, d=Math.abs(delta);
-      if(this.mode==='training')return {};
+      if(this.mode==='training')return emptyInput;
       this.aiTime-=dt;
-      if(this.aiTime>0) return {...this.ai};
+      if(this.aiTime>0) return this.ai;
       this.aiTime=.16+this.random()*.28; const roll=this.random();
       this.ai={}; let tap=null;
       const approach=delta<0?'left':'right', retreat=delta<0?'right':'left';
@@ -112,12 +113,13 @@
     step(dt,input={}) {
       this.total+=dt; this.elapsed+=dt;
       if(this.state==='intro'){
-        if(this.elapsed>1.08&&!this.cued){this.cued=true;this.emit('fight');}
-        if(this.elapsed>=1.82)this.setState('live');
+        if(this.elapsed>1.50&&!this.cued){this.cued=true;this.emit('fight');}
+        if(this.elapsed>=2.90)this.setState('live');
         return;
       }
       if(this.state==='roundEnd'){
-        if(this.elapsed>=1.75){if(this.players[this.winner].wins>=2)this.setState('finish');else {this.round++;this.startRound();}}
+        const hold=this.endKind==='ko'?3.6:1.75;
+        if(this.elapsed>=hold){if(this.players[this.winner].wins>=2)this.setState('finish');else {this.round++;this.startRound();}}
         return;
       }
       if(this.state==='finish'){

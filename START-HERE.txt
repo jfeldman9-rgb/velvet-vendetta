@@ -9,10 +9,12 @@ or Bob, then click Fight. Choose your arena on the title screen before starting.
 For phones, use the hosted game link. The browser edition includes touch controls.
 
 The first click enables sound. The sound button mutes or restores the music,
-voices and effects. This download plays the three scores as lossless 48 kHz,
-24-bit stereo WAV files. Menu, opera and glasshouse themes, character lines
-and combat effects were rebuilt with ElevenLabs for this edition. All art,
-fonts, audio and game code are local.
+voices and effects. Opening index.html from this extracted download plays the
+three scores as lossless 48 kHz, 24-bit stereo WAV files. The hosted page loads
+192 kbps MP3 copies of those scores instead, so a browser does not transfer the
+WAV files. Menu, opera and glasshouse themes, character lines and combat effects
+were rebuilt with ElevenLabs for this edition. All art, fonts, audio and game
+code are local.
 
 HOW TO PLAY
 
