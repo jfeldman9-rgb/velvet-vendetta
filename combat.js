@@ -76,6 +76,7 @@
         } else {
           const m=moves[fire==='special'?p.id:fire];
           if(fire==='special'){p.meter-=40;this.emit('special',{index});}
+          else this.emit('swing',{index,move:fire});
           p.attack={type:fire,move:m,t:0,landed:false,face:p.face};p.crouch=false;return;
         }
       }
