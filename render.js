@@ -1,6 +1,7 @@
 (function(root){
   "use strict";
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const backOrder=[0,1], frontOrder=[1,0];
   class ArenaRenderer {
     constructor(canvas){
       this.canvas=canvas;this.g=canvas.getContext('2d');this.art={};this.fx=[];this.shake=0;this.hurtFlash=0;
@@ -33,7 +34,12 @@
     }
     advance(dt){
       this.shake=Math.max(0,this.shake-34*dt);this.hurtFlash=Math.max(0,this.hurtFlash-dt);
-      this.fx=this.fx.filter(f=>{f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;if(!f.text)f.vy-=260*dt;return f.t<f.life;});
+      const fx=this.fx;let w=0;
+      for(let i=0;i<fx.length;i++){
+        const f=fx[i];f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;if(!f.text)f.vy-=260*dt;
+        if(f.t<f.life)fx[w++]=f;
+      }
+      fx.length=w;
     }
     img(key){return this.art[key]?.im;}
     cover(img,w,h,zoom=1,offset=.5){
@@ -121,11 +127,13 @@
     }
     draw(d,stage){
       const c=this.canvas,g=this.g;let w=Math.max(1,c.clientWidth),h=Math.max(1,c.clientHeight),px=Math.min(devicePixelRatio||1,1.5);
-      if(c.width!==Math.round(w*px)||c.height!==Math.round(h*px)){c.width=Math.round(w*px);c.height=Math.round(h*px);}
+      const bw=Math.round(w*px),bh=Math.round(h*px);
+      if(c.width!==bw||c.height!==bh){c.width=bw;c.height=bh;}
       g.setTransform(px,0,0,px,0,0);g.clearRect(0,0,w,h);this.w=w;this.h=h;
       const [a,b]=d.players, span=clamp(Math.max((Math.abs(a.x-b.x)+360),w/h*691),680,1450);
       const mid=clamp((a.x+b.x)/2,span/2-25,1305-span/2);
-      this.sx=x=>w/2+(x-mid)*(w/span);
+      this.camW=w;this.camMid=mid;this.camSpan=span;
+      if(!this.sx)this.sx=function(x){return this.camW/2+(x-this.camMid)*(this.camW/this.camSpan);};
       this.spriteScale=Math.min(h*.64/483,w/span*1.06);this.yScale=this.spriteScale*1.38;
       this.floor=h*.867;
       g.save();if(this.shake&&!this.reduced)g.translate(Math.sin(d.total*99)*this.shake,Math.cos(d.total*89)*this.shake*.45);
@@ -137,16 +145,16 @@
       }
       const grad=g.createLinearGradient(0,0,0,h*.36);grad.addColorStop(0,'rgba(13,8,14,.53)');grad.addColorStop(1,'rgba(13,8,14,0)');g.fillStyle=grad;g.fillRect(0,0,w,h*.36);
       for(const m of this.ambient){g.fillStyle=stage==='opera'?'rgba(250,210,150,.36)':'rgba(152,230,213,.38)';g.beginPath();g.arc(((m.x+d.total*.009*m.r)%1)*w,((m.y+d.total*.014)%1)*h,m.r*.7,0,7);g.fill();}
-      for(const [i,p] of d.players.entries()){
+      for(let i=0;i<2;i++){const p=d.players[i];
         const shadow=clamp(1-p.y/480,.42,1);g.fillStyle='rgba(16,9,16,.52)';g.beginPath();g.ellipse(this.sx(p.x),this.floor+3,84*this.spriteScale*shadow,12*this.spriteScale*shadow,0,0,7);g.fill();if(d.state!=='finale')this.actor(p,i,d,true);
       }
-      const order=a.attack?[1,0]:[0,1];
+      const order=a.attack?frontOrder:backOrder;
       for(const i of order){
         g.save();
         if(d.state==='finale' && i!==d.winner)g.globalAlpha=1-clamp((d.elapsed-1.02)/.77,0,1);
         this.actor(d.players[i],i,d,false);g.restore();
       }
-      d.players.forEach(p=>this.signature(p));
+      for(let i=0;i<2;i++)this.signature(d.players[i]);
       for(const f of this.fx){
         const x=this.sx(f.x),y=this.floor-f.y*this.yScale;g.save();g.globalAlpha=Math.min(1,(1-f.t/f.life)*2);
         if(f.text){g.fillStyle=f.color;g.font='italic bold '+Math.max(17,31*this.spriteScale)+'px Arc, sans-serif';g.textAlign='center';g.lineWidth=4;g.strokeStyle='#2a182b';g.strokeText(f.text,x,y);g.fillText(f.text,x,y);}

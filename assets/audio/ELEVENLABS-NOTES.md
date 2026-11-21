@@ -9,6 +9,7 @@
 - `menu.wav` — 140 s midnight opera-house instrumental (2,100 credits)
 - `opera.wav` — 145 s dark combat theme with a BDB choir chant (2,175 credits)
 - `glasshouse.wav` — 144 s botanical combat instrumental (2,160 credits)
+- Web playback uses 192 kbps, 48 kHz stereo MP3 siblings (`menu.mp3`, `opera.mp3`, `glasshouse.mp3`) made with ffmpeg and libmp3lame. `app.js` selects MP3 except when the page is opened from a `file:` URL, which keeps the WAV masters for the offline download.
 
 ## Character lines (three takes each; tightest take shipped)
 - `intro-bob.mp3` — "The name is Bob. Big Dick Bob. I brought the eggplant."
@@ -45,7 +46,7 @@
 - Specials play `special-charge` plus the fighter's special SFX and banter line.
 - Match results play the Jason announcer "* wins" clip, then the winner's character line.
 - Round end plays `time` or `perfect` as before. A regular knockout plays `ko-bob` or `ko-cory` by winner; knockout and perfect also keep the `knockout` impact SFX.
-- Intro holds long enough for the default fight call (~6.2 s) before live combat starts.
+- The fight call still starts at 1.50 s. Combat goes live at about 2.92 s, just after the shouted "fight", and the rest of the line plays over the round.
 - The finish caption and call now say "Finish it with eggplant!".
 - Sound toggle, focus-loss pause, and offline local assets are unchanged.
 
