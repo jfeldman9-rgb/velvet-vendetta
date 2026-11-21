@@ -10,6 +10,8 @@
 
 **Headline:** The game is essentially complete. 93 of 100 goals are MET. The 7 non-MET items are one art-quality/provenance pair (3, 4), and a verification/delivery cluster (19, 97, 98, 99, 100) that is about tests and packaging, not gameplay. Do not rebuild any gameplay.
 
+**Later pass:** Goals 3, 19, 97, 98, 99 and 100 are now MET. Goal 4 stays PARTIAL (key-art stubble was not retouched). Current totals are in section 1; what changed is in section 5.
+
 ---
 
 ## 1. Status table (all 100 goals)
@@ -18,7 +20,7 @@
 |---|---|---|---|
 | 1 | Title is Velvet Vendetta | MET | `index.html` `<title>` + `h1` using `assets/velvet.svg` / `assets/vendetta.svg` |
 | 2 | Opera-house setting | MET | `assets/opera.webp` (848K), "The Opera House" `app.js:8`, `hero.webp` shows an opera hall |
-| 3 | Photo as likeness reference | PARTIAL | No reference photo or provenance note in the repo. START-HERE credits say art was generated "from the supplied likeness reference". Unverifiable. |
+| 3 | Photo as likeness reference | MET | `ART-PROVENANCE.md` names Jason's supplied photo as the likeness reference and lists every portrait that derives from it. The photo itself is not in the repo. |
 | 4 | Cory swept light hair, clean-shaven | PARTIAL | Sprites (`cory-idle.webp`) read clean-shaven with swept hair. `hero.webp` and `cory-finale.webp` show visible jaw stubble, which contradicts "clean-shaven" on the key art. |
 | 5 | Cory flamboyant plum couture | MET | `cory-idle.webp`, `hero.webp`: plum jacket/trousers, gold boots |
 | 6 | Cory gold ornament + feathers | MET | Same art: gold filigree, ruby rings, magenta/purple feather collar |
@@ -34,12 +36,12 @@
 | 16 | Show fighter name + style | MET | `#style-name`/`#style-desc` set in `choose()` `app.js:67`; card shows the name |
 | 17 | Way back from selection | MET | `#sel-back` `app.js:222`; `Escape` on select `app.js:235` |
 | 18 | Names visible throughout round | MET | `updateHUD` `app.js:167` sets `b.name`; HUD only hidden in finale/results `app.js:182` |
-| 19 | Match display usable on narrow screens | PARTIAL | Portrait/landscape/coarse-pointer media queries exist (`style.css` last lines) but no phone-viewport run or test exists in this tree. See brief B6. |
+| 19 | Match display usable on narrow screens | MET | `test/layout-smoke.mjs` checks 390×844, 844×390, 768×1024 and 1280×720, including touch walk and punch. Captions sit in a strip under the canvas. |
 | 20 | Menu actions keyboard accessible | MET | Native `<button>`s, `focus()` calls on screen change `app.js:59,74`, dialog focus `app.js:95`, Esc closes `app.js:225` |
 | 21 | Walk left | MET | `combat.js:85-87`, `keyMap` `app.js:47` |
 | 22 | Walk right | MET | Same |
 | 23 | Jump with visible arc | MET | `combat.js:64,73` (vy 632, g 1560); rendered via `yScale` `render.js:63,137` |
-| 24 | Crouch | MET | `combat.js:71`, ducks standing jab `combat.js:94`; sprite is the guard pose squashed to .76 `render.js:55,65` (works, art is shared — see polish E4) |
+| 24 | Crouch | MET | `combat.js` sets crouch and ducks a standing jab. `render.js` draws the idle sprite tucked (no new art); guard still uses `guard.webp`. |
 | 25 | Held guard | MET | `combat.js:71`, blocks only when facing `combat.js:100` |
 | 26 | Fighters stay in arena | MET | `limit(...,95,1185)` `combat.js:87,101,106,142` |
 | 27 | Grounded fighters don't overlap | MET | Push-apart `combat.js:140-143` (gap<67, |dy|<112) |
@@ -108,18 +110,20 @@
 | 90 | Finisher sound cue each | MET | `finale-hit-cory/bob.mp3` `app.js:216`, `finale-cory/bob.mp3` `app.js:152` |
 | 91 | Keyboard controls in download | MET | `START-HERE.txt` "HOW TO PLAY"; in-game move list |
 | 92 | Start instructions in download | MET | `START-HERE.txt` (54 lines) |
-| 93 | Offline edition playable, no remote assets | MET | No `http(s)` fetches (only the SVG xmlns string); fonts embedded as base64 in `style.css`; WAV on `file:` `app.js:10`. file:// path not browser-tested (see risks). |
-| 94 | Ship the plan with the game | MET | `Velvet-Vendetta-100-Goals.md` tracked at repo root. No packaging script to prove it lands in the ZIP. |
-| 95 | Download 100–500 decimal MB | MET | Tree = 141,588,804 B (141.6 MB) incl. tests/docs, excl. `.git`. ZIP not measured (see 100). |
+| 93 | Offline edition playable, no remote assets | MET | No `http(s)` fetches (only the SVG xmlns string); fonts embedded as base64 in `style.css`; WAV on `file:` `app.js`. `test/browser-smoke.mjs --file` opens `index.html` and asserts `menu.wav`. |
+| 94 | Ship the plan with the game | MET | `Velvet-Vendetta-100-Goals.md` is tracked and included by `tools/package.mjs`. |
+| 95 | Download 100–500 decimal MB | MET | Offline zip measured at 139,384,361 B (139.384 MB). WAV scores stay in the archive. |
 | 96 | Use playable media for size budget | MET | 123,552,306 B of 24-bit WAV scores are the file:// music source |
-| 97 | Verify local asset references resolve | PARTIAL | My manual pass: every static and dynamic asset name resolves. No automated check exists. Brief B7. |
-| 98 | Exercise round/match/finisher transitions | PARTIAL | `test/browser-smoke.mjs` covers all transitions, but needs `google-chrome` + `python3`, isn't wired to a script, uses http only, and failed at hook injection in this sandbox. Unit tests cover intro/round-end/special only. Brief B7. |
-| 99 | Check desktop and phone layouts | MISSING | Smoke test uses one 1280×720 window; no phone viewport/screenshot check anywhere. Brief B6. |
-| 100 | Verify final archive opens, report size | MISSING | No archive, build script, or size report in the repo. Brief B8. |
+| 97 | Verify local asset references resolve | MET | `test/assets.test.js` fails if any referenced path is missing, including against an extracted zip via `VV_ROOT`. |
+| 98 | Exercise round/match/finisher transitions | MET | `npm test` runs the unit tests plus `test/browser-smoke.mjs` (http and `file://`). The http run covers rounds, both finishers, an ordinary victory, and rematch. |
+| 99 | Check desktop and phone layouts | MET | `test/layout-smoke.mjs` fails on overflow or offscreen controls and writes a PNG per viewport under the artifacts directory. |
+| 100 | Verify final archive opens, report size | MET | `node tools/package.mjs` builds `../dist/velvet-vendetta.zip`, runs `unzip -t`, the asset test, and a `file://` open. Measured size is recorded in section 5. |
 
 ### Totals
 
-**MET: 93 · PARTIAL: 5 (3, 4, 19, 97, 98) · MISSING: 2 (99, 100)** — total 100.
+**MET: 99 · PARTIAL: 1 (4) · MISSING: 0** — total 100.
+
+The table above is the original read-only audit, with rows 3, 19, 24, 93, 94, and 97–100 updated after the implementation in section 5. Goal 4 stays PARTIAL: the key-art stubble was not retouched.
 
 ---
 
@@ -203,3 +207,15 @@ Ranked by impact ÷ effort. All fit plain JS, two fighters, the current size bud
 5. **Freeze regression (PR #3).** The fixes: `Sound` holds `this.banterEl` and a method `banter(id)` (a property named `banter` once shadowed the method and froze the first special); `frame()` arms `requestAnimationFrame(frame)` **before** a `try{…}catch` so one thrown error can no longer kill the loop; `.play()` rejections are swallowed (`app.js:21`); intro goes live at 2.90 s so the fight call overlaps the start of the round (`combat.js:117`). `test/combat.test.js:113-131` greps for exactly these. Any refactor must keep those names/order and the `Math.min(devicePixelRatio||1,1.5)` cap. Also keep `audio.banter` and `say` on separate `Audio` elements so a special's banter can't cut the announcer.
 6. **Test coverage gaps.** Unit tests are 5 and cover intro timing, round-end holds, special meter spend, and source-greps. Untested: movement/walls/overlap, guard/crouch rules, combo, best-of-three, sudden death, finisher paths, training reset, pause, touch input, results/rematch UI, asset references, `file://` path, phone layouts, and archive size. The one browser test can't be run with a single command, needs `google-chrome`/`python3`, and writes to `/tmp`. See B6–B8.
 7. **Minor gameplay notes (not goal failures).** Crouch shares the guard sprite; the CPU is always player 2 and the finisher is only interactive for the player (CPU wins play an automatic opponent finisher); training mode shows an infinity clock; no gamepad. Window blur auto-pauses, so the smoke test stubs blur events (`browser-smoke.mjs:90`) — don't remove that stub or headless runs will pause themselves.
+
+---
+
+## 5. Implementation pass
+
+The read-only findings above are unchanged. This pass added the missing checks and the feel work without new image art, new audio files, or announcer rewiring.
+
+- **Provenance.** `ART-PROVENANCE.md` records that Jason's photo is the likeness reference and is not in the repo, and lists the portrait files derived from it. Goal 4 is still PARTIAL.
+- **Checks.** `test/assets.test.js`, `test/dialogue.test.js`, extended `test/combat.test.js`, `test/browser-smoke.mjs` (`--file` plus an ordinary victory), `test/layout-smoke.mjs`, and `tools/package.mjs`. `npm test` runs units, the http smoke, the file smoke, and the layout smoke.
+- **Archive.** `node tools/package.mjs` wrote `/agent/repos/dist/velvet-vendetta.zip` (outside the repo). `unzip -t` passed, the asset test passed against the extract, and `index.html` opened via `file://` with `menu.wav` requested. **139,384,361 B / 139.384 MB.**
+- **Feel.** Crouch is a transform of the idle sprite. Hit-stop scales with damage and combo, with a short white flash on specials. The killing blow sets a 0.4 s render slow-mo and zoom; the callout stays "Knockout". Attack buffer life is 0.2 s and guard release keeps blocking for about 80 ms. Meter-full adds a HUD glow and a synthesized chime. Finale music ducks to 0.1 without pausing the finale voice.
+- **Captions.** `dialogue.js` holds the on-screen lines. No new audio. Each fighter has 10 lines in each of intro, taunt, bigHit, block, special, meter, roundWin, roundLoss, matchWin, and finisher (200 lines). Picks skip the line just shown. The caption is a strip under the canvas, so it does not cover the health bars or the fighters.

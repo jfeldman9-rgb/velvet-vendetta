@@ -6,13 +6,19 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
+const fileMode = process.argv.includes('--file');
+const rootFlag = process.argv.indexOf('--root');
+const ROOT = rootFlag >= 0 ? path.resolve(process.argv[rootFlag + 1]) : fileURLToPath(new URL('..', import.meta.url));
 const PORT = 8765;
-const CDP_PORT = 9333;
-const ROOT = new URL('..', import.meta.url).pathname;
-const PAGE = `http://127.0.0.1:${PORT}/index.html`;
+const CDP_PORT = fileMode ? 9335 : 9333;
+const PAGE = fileMode
+  ? pathToFileURL(path.join(ROOT, 'index.html')).href
+  : `http://127.0.0.1:${PORT}/index.html`;
 
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], {
+const server = fileMode ? null : spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], {
   cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe']
 });
 const chrome = spawn('google-chrome', [
@@ -26,6 +32,7 @@ const chrome = spawn('google-chrome', [
   '--disable-renderer-backgrounding',
   '--disable-backgrounding-occluded-windows',
   '--autoplay-policy=no-user-gesture-required',
+  '--allow-file-access-from-files',
   '--window-size=1280,720',
   '--force-device-scale-factor=2',
   `--remote-debugging-port=${CDP_PORT}`,
@@ -39,7 +46,7 @@ let fail = '';
 
 function shutdown(code) {
   chrome.kill('SIGKILL');
-  server.kill('SIGKILL');
+  if (server) server.kill('SIGKILL');
   process.exit(code);
 }
 
@@ -156,6 +163,22 @@ const HOOKS = `(() => {
   return 'hooks';
 })()`;
 
+const FILE_PROBE = `(() => {
+  const names = () => (window.__played || []).map(u => (u.split('/').pop() || '').split('?')[0]);
+  return (async () => {
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    document.querySelector('#arcade').click();
+    await new Promise(r => setTimeout(r, 600));
+    return {
+      title: document.title,
+      protocol: location.protocol,
+      dialogue: typeof VelvetDialogue,
+      played: names(),
+      errors: window.__errors || []
+    };
+  })();
+})()`;
+
 const MATCH = `(() => {
   const click = sel => document.querySelector(sel).click();
   const names = () => (window.__played || []).map(u => u.split('/').pop().split('?')[0]);
@@ -209,10 +232,20 @@ const MATCH = `(() => {
     const afterCory = names();
     click('#rematch');
     await window.waitFor('rematch-live', () => window.__duel !== d && window.__duel.state === 'live', 15000);
-    click('#pause');
-    await window.waitFor('pause', () => document.querySelector('#quit'));
-    click('#quit');
-    await window.waitFor('home', () => !document.querySelector('#home').hidden);
+    const rematch = window.__duel;
+    rematch.chooseAI = () => ({});
+    rematch.players.forEach(p => { p.attack = null; p.stun = 0; });
+    rematch.stop = 0;
+    rematch.players[0].hp = 60; rematch.players[1].hp = 0;
+    await window.waitFor('ord-r2', () => rematch.round === 2 && rematch.state === 'live', 15000);
+    rematch.players.forEach(p => { p.attack = null; p.stun = 0; });
+    rematch.stop = 0;
+    rematch.players[0].hp = 40; rematch.players[1].hp = 0;
+    await window.waitFor('ord-finish', () => rematch.state === 'finish', 15000);
+    await window.waitFor('ord-results', () => rematch.state === 'results', 12000);
+    const ordinary = !document.querySelector('.result-img') && rematch.viaFinale === false;
+    click('#done');
+    await window.waitFor('ord-home', () => !document.querySelector('#home').hidden && document.querySelector('#battle').hidden);
     click('[data-arena="glasshouse"]');
     click('#arcade');
     await window.waitFor('select2', () => !document.querySelector('#select').hidden);
@@ -238,7 +271,7 @@ const MATCH = `(() => {
     click('#done');
     await window.waitFor('menu', () => !document.querySelector('#home').hidden && document.querySelector('#battle').hidden);
     return {
-      liveAt, dpr, specials, fps, advanced, aubergine, violet,
+      liveAt, dpr, specials, fps, advanced, aubergine, violet, ordinary,
       marks: window.__marks,
       fights: window.__fights,
       played: names(),
@@ -291,8 +324,38 @@ try {
   await send('Page.navigate', { url: PAGE });
   await loaded;
   await delay(250);
+  const ping = await send('Runtime.evaluate', { expression: '1+1', returnByValue: true });
+  if (ping.exceptionDetails) throw new Error('startup eval failed: ' + (ping.exceptionDetails.exception?.description || ping.exceptionDetails.text || 'Uncaught'));
+  if (!ping.result || ping.result.value !== 2) throw new Error('startup eval returned ' + JSON.stringify(ping.result));
   const hooked = await send('Runtime.evaluate', { expression: HOOKS, returnByValue: true });
-  if (hooked.exceptionDetails) throw new Error(hooked.exceptionDetails.text);
+  if (hooked.exceptionDetails) {
+    const ex = hooked.exceptionDetails;
+    throw new Error('hook injection failed: ' + (ex.exception?.description || ex.text || JSON.stringify(ex)));
+  }
+  if (fileMode) {
+    const ran = await send('Runtime.evaluate', { expression: FILE_PROBE, awaitPromise: true, returnByValue: true });
+    if (ran.exceptionDetails) {
+      const ex = ran.exceptionDetails;
+      throw new Error(ex.exception?.description || ex.text || JSON.stringify(ex));
+    }
+    const report = ran.result.value;
+    const played = report.played || [];
+    const problems = [];
+    if (report.protocol !== 'file:') problems.push('protocol ' + report.protocol);
+    if (!String(report.title).includes('Velvet Vendetta')) problems.push('title ' + report.title);
+    if (report.dialogue !== 'object') problems.push('dialogue missing');
+    if (!played.some(name => name === 'menu.wav')) problems.push('menu.wav was not requested: ' + played.join(','));
+    if (played.some(name => /^(menu|opera|glasshouse)\.mp3$/.test(name))) problems.push('file build requested mp3 music');
+    if (report.errors.length) problems.push('page errors ' + report.errors.join(' | '));
+    if (consoleErrors.length) problems.push('console ' + consoleErrors.join(' | '));
+    console.log(JSON.stringify({ protocol: report.protocol, title: report.title, played }, null, 2));
+    if (problems.length) {
+      console.error('\nFAILED\n' + problems.join('\n'));
+      shutdown(1);
+    }
+    console.log('\nPASSED file');
+    shutdown(0);
+  }
   const ran = await send('Runtime.evaluate', { expression: MATCH, awaitPromise: true, returnByValue: true });
   if (ran.exceptionDetails) {
     const ex = ran.exceptionDetails;
@@ -346,6 +409,8 @@ try {
   if (!kinds.includes('time:bob')) problems.push('missing time-out');
   if (!report.aubergine.includes('Aubergine')) problems.push('missing Aubergine Ovation');
   if (!report.violet.includes('Protocol')) problems.push('missing Protocol Violet');
+  if (!report.ordinary) problems.push('ordinary victory did not skip the finisher');
+  if (/K\.O\./i.test(JSON.stringify(report.marks) + (report.aubergine || '') + (report.violet || ''))) problems.push('showed K.O.');
   if (checks.playedKo.length) problems.push('audio not played: ' + checks.playedKo.join(','));
   if (missingNet.length) problems.push('not requested: ' + missingNet.join(','));
   if (wavMusic.length) problems.push('web build requested wav music');

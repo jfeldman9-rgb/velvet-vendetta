@@ -1,0 +1,11 @@
+{
+  "name": "velvet-vendetta",
+  "private": true,
+  "scripts": {
+    "test": "node test/run-all.mjs",
+    "unit": "node --test test/*.test.js",
+    "smoke": "node test/browser-smoke.mjs",
+    "layout": "node test/layout-smoke.mjs",
+    "package": "node tools/package.mjs"
+  }
+}

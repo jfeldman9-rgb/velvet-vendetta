@@ -49,6 +49,7 @@ the arena, then select Pause and Rehearse Fatality. Practice resumes afterward.
 CREDITS
 
 Original character and arena illustrations were generated for this game from
-the supplied likeness reference. Music and sound effects were synthesized for
+Jason's supplied likeness photo. That photo is not included in this download.
+ART-PROVENANCE.md lists which art files derive from it. Music and sound effects were synthesized for
 Velvet Vendetta. Bob is voiced by ElevenLabs Benedict. Cory is voiced by William (flamboyant and sassy). Arcade announcer cues are Jason's Instant Voice Clone.
 Open Sans font licensing information is in assets/fonts.
