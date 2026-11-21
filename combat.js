@@ -113,7 +113,7 @@
       this.total+=dt; this.elapsed+=dt;
       if(this.state==='intro'){
         if(this.elapsed>1.50&&!this.cued){this.cued=true;this.emit('fight');}
-        if(this.elapsed>=6.20)this.setState('live');
+        if(this.elapsed>=5.00)this.setState('live');
         return;
       }
       if(this.state==='roundEnd'){
