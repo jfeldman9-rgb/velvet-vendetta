@@ -1,0 +1,50 @@
+VELVET VENDETTA
+Nightshade Arcade
+
+GET INTO THE RING
+
+Extract the entire ZIP to a folder on your computer. Open index.html from the
+extracted folder in a recent desktop browser. Click Start Arcade, choose Cory
+or Bob, then click Fight. Choose your arena on the title screen before starting.
+For phones, use the hosted game link. The browser edition includes touch controls.
+
+The first click enables sound. The sound button mutes or restores the music,
+voices and effects. This download plays the three original scores as lossless
+48 kHz, 24-bit stereo WAV files. All art, fonts, audio and game code are local.
+
+HOW TO PLAY
+
+A / D or Left / Right     Walk
+W or Up                   Jump
+S or Down                 Crouch
+Shift or I                Hold guard
+J                         Jab
+K                         Heavy kick
+L                         Signature attack, costs 40 meter
+F                         Trigger an eggplant fatality when prompted
+Esc or P                  Pause
+
+Win two rounds to take the match. Each round lasts 60 game seconds. The fighter
+with more health wins at time. Tied health triggers a one-hit sudden death.
+Jabs are quick. Kicks have more reach and take longer to recover. A crouch
+can duck a standing jab. Land hits or block attacks to build signature meter.
+
+Cory wears gold-trimmed plum couture. Orchid Rush sends a burst of petals
+across the stage. Bob wears a black agent suit and shades. Null Protocol
+releases a shorter, quicker digital pulse.
+
+EGGPLANT FATALITIES
+
+After the deciding round, press F or tap Perform Fatality before the countdown
+ends. Cory performs Aubergine Ovation. Bob executes Protocol Violet. Allow
+the countdown to expire for an ordinary victory.
+
+To see either sequence immediately, pick Training, choose the fighter, enter
+the arena, then select Pause and Rehearse Fatality. Practice resumes afterward.
+
+CREDITS
+
+Original character and arena illustrations were generated for this game from
+the supplied likeness reference. Music and sound effects were synthesized for
+Velvet Vendetta. Character and announcer lines use distinct synthesized voices.
+Open Sans font licensing information is in assets/fonts.
